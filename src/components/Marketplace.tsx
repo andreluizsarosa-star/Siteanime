@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback, type FormEvent } from "react";
 import Link from "next/link";
+import SiteHeader, { games, typeURL } from "./SiteHeader";
+import { Swords, Image as ImageIcon } from "lucide-react";
 import {
   commission as platformCommission,
   expectedValue,
@@ -247,8 +249,7 @@ function App() {
   const { data: session, reload: reloadSession } = useData("session");
   const [cart, setCart] = useState<CartLine[]>([]),
     [ready, setReady] = useState(false),
-    [toast, setToast] = useState(""),
-    [menu, setMenu] = useState(false);
+    [toast, setToast] = useState("");
   useEffect(() => {
     try {
       setCart(JSON.parse(localStorage.getItem("nexo-cart") || "[]"));
@@ -341,100 +342,25 @@ function App() {
     );
   return (
     <>
-      <div className="demo-bar">
-        <span className="demo-dot" />
-        AMBIENTE DE DEMONSTRAÇÃO{" "}
-        <span className="demo-extra">
-          · Produtos fictícios, sem cobrança ou envio real
-        </span>
-        <Link href="/conta">
-          Conhecer o sandbox <ArrowUpRight size={12} />
-        </Link>
-      </div>
-      <header className="header">
-        <div className="container head-main">
-          <Link className="logo" href="/" aria-label="Nexo TCG início">
-            <span className="logo-mark">n</span>
-            {session?.siteName || "Nexo TCG"}
-            <span className="logo-dot">β</span>
-          </Link>
-          <form className="search" action="/explorar">
-            <Search size={19} />
-            <input
-              name="q"
-              placeholder="Qual carta falta na sua coleção?"
-              aria-label="Buscar cartas e colecionáveis"
-              defaultValue={params.get("q") || ""}
-            />
-            <kbd>↵</kbd>
-          </form>
-          <div className="header-actions">
-            <Link href="/favoritos" aria-label="Favoritos">
-              <Heart size={21} />
-            </Link>
-            <Link href="/conta" className="account-link">
-              <UserRound size={21} />
-              <span>
-                {user ? user.name.split(" ")[0] : "Entrar"}
-                <small>{user ? "Minha conta" : "ou criar conta"}</small>
-              </span>
-            </Link>
-            <Link
-              href="/carrinho"
-              className="bag"
-              aria-label={`Carrinho com ${cart.reduce((s, i) => s + i.quantity, 0)} itens`}
-            >
-              <ShoppingBag size={22} />
-              <b>{cart.reduce((s, i) => s + i.quantity, 0)}</b>
-            </Link>
-            <button
-              className="icon mobile-menu"
-              onClick={() => setMenu(!menu)}
-              aria-label="Abrir navegação"
-            >
-              <Menu />
-            </button>
-          </div>
-        </div>
-        <div className={"nav-wrap " + (menu ? "open" : "")}>
-          <nav className="container nav">
-            <Link
-              className={path === "/explorar" ? "active" : ""}
-              href="/explorar"
-            >
-              <Layers size={16} /> Explorar coleção
-            </Link>
-            <Link href="/explorar?franchise=Pokémon">Pokémon</Link>
-            <Link href="/explorar?franchise=One+Piece">One Piece</Link>
-            <Link href="/explorar?franchise=Yu-Gi-Oh!">Yu-Gi-Oh!</Link>
-            <Link href="/explorar?type=Figure">Colecionáveis</Link>
-            <Link
-              href="/boosters"
-              className={path === "/boosters" ? "active" : ""}
-            >
-              Boosters <span className="tiny-tag">DEMO</span>
-            </Link>
-            <Link href="/afiliados">
-              Achados parceiros <ArrowUpRight size={13} />
-            </Link>
-            <Link href="/vender" className="sell-link">
-              <Plus size={16} /> Quero vender
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader
+        name={session?.siteName || "Nexo TCG"}
+        user={user}
+        count={cart.reduce((sum, item) => sum + item.quantity, 0)}
+      />
       <main>{content}</main>
       <footer>
         <div className="container footer-grid">
           <div>
             <Link href="/" className="logo">
-              <span className="logo-mark">n</span>
+              <span className="logo-mark">
+                <Layers size={22} />
+              </span>
               {session?.siteName || "Nexo TCG"}
             </Link>
             <p>
-              Histórias que cabem na sua coleção.
+              O seu universo de cartas e colecionáveis.
               <br />
-              Conexões que vão além das cartas.
+              Encontre, compare e colecione.
             </p>
             <span className="muted small">
               Identidade provisória · Projeto em desenvolvimento
@@ -495,11 +421,23 @@ function ProductCard({
     <article className="product-card">
       <div className="product-image">
         <Link href={"/produto/" + item.id}>
-          <img
-            src={item.photos?.[0] || item.art}
-            alt={`Imagem do anúncio de demonstração: ${item.title}`}
-            loading="lazy"
-          />
+          {(item.photos?.[0] || item.art) === "/art/card-photo-pending.svg" ? (
+            <div
+              className="product-photo-empty"
+              role="img"
+              aria-label={`Foto do exemplar de ${item.title} ainda não adicionada`}
+            >
+              <ImageIcon size={34} strokeWidth={1.3} />
+              <span>Foto do exemplar</span>
+              <small>Aguardando o vendedor</small>
+            </div>
+          ) : (
+            <img
+              src={item.photos?.[0] || item.art}
+              alt={`Foto do exemplar: ${item.title}`}
+              loading="lazy"
+            />
+          )}
         </Link>
         <span className="condition">{item.condition}</span>
         <button
@@ -509,7 +447,11 @@ function ProductCard({
         >
           <Heart size={17} />
         </button>
-        <span className="image-caption">ARTE DEMO · NEXO ORIGINALS</span>
+        <span className="image-caption">
+          {(item.photos?.[0] || item.art || "").startsWith("data:")
+            ? "FOTO DO ANUNCIANTE"
+            : "FOTO DO EXEMPLAR PENDENTE"}
+        </span>
       </div>
       <div className="product-info">
         <div className="eyebrow">
@@ -547,209 +489,313 @@ function ProductCard({
 }
 function Home(props: any) {
   const { data, error } = useData("catalog");
+  const [selection, setSelection] = useState("featured");
+  const offers: Item[] = (data || []).filter(
+    (item: Item, index: number, all: Item[]) =>
+      all.findIndex(
+        (x) =>
+          x.edition_id === item.edition_id &&
+          x.condition === item.condition &&
+          x.grading === item.grading,
+      ) === index,
+  );
+  const visible = offers
+    .filter((i) =>
+      selection === "budget"
+        ? i.price <= 5000
+        : selection === "pokemon"
+          ? i.franchise === "Pokémon"
+          : selection === "one-piece"
+            ? i.franchise === "One Piece"
+            : true,
+    )
+    .slice(0, 8);
   return (
-    <>
-      <section className="container hero">
+    <div className="market-home">
+      <section className="container home-hero">
         <div className="hero-copy">
-          <span className="pill">
-            <span /> O SEU UNIVERSO DE COLECIONÁVEIS
+          <span className="hero-kicker">
+            <span /> SEU PRÓXIMO ACHADO ESTÁ AQUI
           </span>
           <h1>
-            Pequenas cartas.
+            Seu universo.
             <br />
-            Grandes <em>conexões.</em>
+            Sua próxima
+            <br />
+            <span>grande carta.</span>
           </h1>
           <p>
-            Encontre aquela carta especial, descubra novos universos e dê o
-            próximo passo na sua coleção.
+            Pokémon, One Piece e muito mais. Encontre a carta que falta, compare
+            exemplares e conecte sua coleção a novos vendedores.
           </p>
           <div className="hero-actions">
             <Link className="button primary" href="/explorar">
-              Explorar a coleção <ArrowUpRight size={18} />
+              Explorar catálogo
+              <ArrowUpRight size={19} />
             </Link>
-            <Link href="/vender" className="text-button">
-              Começar a vender <ArrowRight size={16} />
+            <Link className="button hero-secondary" href="/vender">
+              Quero vender
+              <ArrowRight size={17} />
             </Link>
           </div>
-          <div className="hero-note">
-            <span className="mini-cards">
-              <i>N</i>
-              <i>E</i>
-              <i>X</i>
+          <div className="hero-bottom">
+            <span>
+              <Layers size={15} />
+              Cartas reais, versões certas
             </span>
             <span>
-              De colecionador para colecionador.
-              <br />
-              <strong>Seu próximo achado começa aqui.</strong>
+              <Store size={15} />
+              De colecionador para colecionador
             </span>
           </div>
         </div>
-        <div className="hero-art">
-          <span className="orbit orbit-one" />
-          <span className="orbit orbit-two" />
-          <span className="spark spark-one">✧</span>
-          <span className="spark spark-two">✦</span>
-          <img
-            className="hero-card back"
-            src="/art/samurai.svg"
-            alt="Arte original Samurai"
-          />
-          <img
-            className="hero-card front"
-            src="/art/aurora.svg"
-            alt="Arte original Dragão da Aurora"
-          />
-          <span className="floating-label">
-            <Sparkles size={18} />
+        <div
+          className="collection-scene"
+          aria-label="Exemplos de cartas reais do catálogo"
+        >
+          <div className="scene-glow" />
+          <span className="scene-orbit first" />
+          <span className="scene-orbit second" />
+          <div className="catalog-preview">
+            <div className="preview-toolbar">
+              <span className="preview-brand">
+                <Layers size={17} />
+                nexo
+              </span>
+              <span>ENCONTRE A SUA PRÓXIMA</span>
+              <Search size={16} />
+            </div>
+            <div className="preview-feature">
+              <span className="preview-franchise">POKÉMON TCG</span>
+              <span className="preview-name">Charizard</span>
+              <span className="preview-code">Base Set · 4/102</span>
+              <div className="preview-placeholder">
+                <Layers size={64} strokeWidth={1} />
+                <span>
+                  Foto do exemplar
+                  <br />
+                  enviada pelo vendedor
+                </span>
+              </div>
+              <div className="preview-tags">
+                <span>Holo</span>
+                <span>Inglês</span>
+                <span>NM</span>
+              </div>
+            </div>
+            <div className="preview-other">
+              <span className="preview-icon">
+                <Swords size={22} />
+              </span>
+              <div>
+                <b>Roronoa Zoro</b>
+                <small>One Piece · OP01-025</small>
+              </div>
+              <ArrowUpRight size={18} />
+            </div>
+          </div>
+          <div className="scene-label">
+            <ShieldCheck size={23} />
             <span>
-              A próxima descoberta
-              <br />
-              <b>pode ser sua.</b>
+              Compare com clareza<b>Edição, idioma e conservação.</b>
             </span>
+          </div>
+          <span className="scene-spark one">✦</span>
+          <span className="scene-spark two">✧</span>
+          <p className="scene-caption">
+            Catálogo de cartas existentes · ofertas de demonstração
+          </p>
+        </div>
+      </section>
+      <section
+        className="container collector-benefits"
+        aria-label="Como funciona"
+      >
+        <div>
+          <Search size={21} />
+          <span>
+            <b>Encontre a versão certa</b>
+            <small>Coleção, idioma e acabamento</small>
           </span>
-          <span className="art-disclaimer">
-            Cartas ilustrativas · personagens originais
+        </div>
+        <div>
+          <Store size={21} />
+          <span>
+            <b>Compare vendedores</b>
+            <small>Ofertas de cada exemplar</small>
+          </span>
+        </div>
+        <div>
+          <Heart size={21} />
+          <span>
+            <b>Monte sua lista de desejos</b>
+            <small>Salve suas próximas descobertas</small>
+          </span>
+        </div>
+        <div>
+          <Package size={21} />
+          <span>
+            <b>Acompanhe seus pedidos</b>
+            <small>Uma remessa por vendedor</small>
           </span>
         </div>
       </section>
-      <div className="container trust-strip">
-        <div>
-          <ShieldCheck />
-          <span>
-            <b>Transparência em cada compra</b>
-            <small>Ofertas, condições e vendedores à vista</small>
-          </span>
-        </div>
-        <div>
-          <Layers />
-          <span>
-            <b>Uma coleção, muitos universos</b>
-            <small>Cartas, figures e achados especiais</small>
-          </span>
-        </div>
-        <div>
-          <Package />
-          <span>
-            <b>Feito para quem coleciona</b>
-            <small>Do primeiro card à peça que faltava</small>
-          </span>
-        </div>
-      </div>
       <section className="container section universes">
         <div className="section-heading">
           <div>
             <span className="eyebrow accent">
-              ENCONTRE SUA PRÓXIMA HISTÓRIA
+              UM CATÁLOGO, VÁRIOS UNIVERSOS
             </span>
-            <h2>Qual é o seu universo?</h2>
+            <h2>O que você coleciona?</h2>
           </div>
           <Link href="/explorar">
-            Ver todos <ArrowUpRight size={16} />
+            Ver catálogo completo
+            <ArrowUpRight size={17} />
           </Link>
         </div>
         <div className="universe-grid">
-          {[
-            ["Pokémon", "O início de toda jornada", "P", "yellow"],
-            ["One Piece", "Sua próxima grande aventura", "O", "red"],
-            ["Yu-Gi-Oh!", "É hora do seu próximo duelo", "Y", "purple"],
-            ["Naruto", "Um novo caminho ninja", "N", "orange"],
-            ["Dragon Ball", "Eleve sua coleção", "D", "green"],
-          ].map(([name, desc, letter, color]) => (
+          {games.map((g) => (
             <Link
-              key={name}
-              className={"universe " + color}
-              href={"/explorar?franchise=" + encodeURIComponent(name)}
+              className={"universe " + g.tone}
+              key={g.name}
+              href={"/explorar?franchise=" + encodeURIComponent(g.name)}
             >
-              <span className="universe-symbol">
-                {letter}
-                <span>✦</span>
+              <span className={"game-icon " + g.tone}>
+                <g.icon size={27} />
               </span>
               <div>
-                <b>{name}</b>
-                <small>{desc}</small>
+                <b>{g.name}</b>
+                <small>Explorar coleção</small>
               </div>
-              <ArrowUpRight size={18} />
+              <ArrowUpRight size={17} />
             </Link>
           ))}
         </div>
       </section>
-      <section className="container section">
+      <section className="container section featured-section">
         <div className="section-heading">
           <div>
-            <span className="eyebrow accent">
-              O PRÓXIMO DESTAQUE DA SUA PASTA
-            </span>
-            <h2>
-              Descobertas que valem o espaço{" "}
-              <span className="live-badge">Catálogo demo</span>
-            </h2>
+            <span className="eyebrow accent">SUA PRÓXIMA DESCOBERTA</span>
+            <h2>Encontre espaço na sua coleção.</h2>
           </div>
           <Link href="/explorar">
-            Explorar tudo <ArrowUpRight size={16} />
+            Ver todas as ofertas
+            <ArrowUpRight size={17} />
           </Link>
+        </div>
+        <div className="discovery-toolbar">
+          <div
+            className="discovery-tabs"
+            role="group"
+            aria-label="Filtrar destaques"
+          >
+            {[
+              ["featured", "Em destaque"],
+              ["pokemon", "Pokémon"],
+              ["one-piece", "One Piece"],
+              ["budget", "Até R$ 50"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                aria-pressed={selection === key}
+                className={selection === key ? "selected" : ""}
+                onClick={() => setSelection(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="demo-catalog-note">
+            Ofertas e preços de demonstração
+          </span>
         </div>
         <Status data={data} error={error} />
         {data && (
-          <div className="product-grid">
-            {data
-              .filter(
-                (item: Item, index: number, all: Item[]) =>
-                  all.findIndex((x) => x.edition_id === item.edition_id) ===
-                  index,
-              )
-              .sort((a: Item, b: Item) => b.price - a.price)
-              .slice(0, 4)
-              .map((item: Item) => (
-                <ProductCard key={item.id} item={item} {...props} />
-              ))}
-          </div>
+          <>
+            {visible.length ? (
+              <div className="product-grid">
+                {visible.map((item) => (
+                  <ProductCard key={item.id} item={item} {...props} />
+                ))}
+              </div>
+            ) : (
+              <Empty text="Nenhuma oferta nesta seleção ainda.">
+                <Link href="/explorar">Ver o catálogo</Link>
+              </Empty>
+            )}
+          </>
         )}
       </section>
-      <section className="container section">
-        <div className="booster-banner">
-          <div>
-            <span className="eyebrow">UM PACOTE. NOVAS POSSIBILIDADES.</span>
-            <h2>
-              A emoção de descobrir.
-              <br />
-              Do seu jeito.
-            </h2>
-            <p>
-              Conheça os boosters personalizados: composição transparente e
-              abertura carta por carta no site.
-            </p>
-            <Link className="button light" href="/boosters">
-              Descobrir boosters <Sparkles size={18} />
-            </Link>
-            <small>Experiência sandbox · sem compra ou envio real</small>
-          </div>
-          <div className="pack-art">
-            <span>NEXO</span>
-            <Sparkles size={60} />
-            <b>COSMOS</b>
-            <small>6 CARTAS · DEMONSTRAÇÃO</small>
-          </div>
-          <span className="banner-star">✧</span>
-        </div>
-      </section>
-      <section className="container community">
-        <span className="eyebrow accent">SUA COLEÇÃO TEM HISTÓRIA</span>
-        <h2>
-          Algumas cartas merecem
-          <br />
-          encontrar um novo colecionador.
-        </h2>
-        <p>
-          Abra sua vitrine, publique seus exemplares e faça parte desse
-          universo.
-          <br />
-          Comissão de 5% nos produtos vendidos. Sem comissão sobre o frete.
-        </p>
-        <Link href="/vender" className="button outline">
-          Criar minha vitrine <ArrowUpRight size={18} />
+      <section className="container home-discover">
+        <Link className="discover-panel booster-discover" href="/boosters">
+          <span className="eyebrow">BOOSTERS PERSONALIZADOS · DEMO</span>
+          <Sparkles
+            className="discover-decoration"
+            size={116}
+            strokeWidth={1}
+          />
+          <h2>
+            Uma nova descoberta.
+            <br />
+            Carta por carta.
+          </h2>
+          <p>
+            Explore a composição, conheça as garantias e experimente a abertura
+            no site.
+          </p>
+          <span className="discover-cta">
+            Conhecer os boosters
+            <ArrowUpRight size={18} />
+          </span>
+          <small>
+            Pacotes personalizados de vendedores. Não são boosters oficiais
+            lacrados.
+          </small>
+        </Link>
+        <Link className="discover-panel partners-discover" href="/afiliados">
+          <span className="eyebrow">ACHADOS EM LOJAS PARCEIRAS</span>
+          <ExternalLink
+            className="discover-decoration"
+            size={100}
+            strokeWidth={1}
+          />
+          <h2>
+            Seu próximo achado
+            <br />
+            pode estar além.
+          </h2>
+          <p>
+            Ofertas externas identificadas, com compra na plataforma de destino.
+          </p>
+          <span className="discover-cta">
+            Explorar parceiros
+            <ArrowUpRight size={18} />
+          </span>
+          <small>
+            Links de afiliado. Preço e disponibilidade na loja de destino.
+          </small>
         </Link>
       </section>
-    </>
+      <section className="container seller-invite">
+        <div className="seller-invite-icon">
+          <Store size={32} />
+        </div>
+        <div>
+          <span className="eyebrow accent">
+            SUA COLEÇÃO PODE ABRIR NOVAS CONEXÕES
+          </span>
+          <h2>Tem uma carta procurando outro colecionador?</h2>
+          <p>
+            Crie sua vitrine, anuncie seus exemplares e acompanhe cada pedido.
+            Comissão de 5% sobre produtos; frete separado.
+          </p>
+        </div>
+        <Link className="button primary" href="/vender">
+          Começar a vender
+          <ArrowUpRight size={18} />
+        </Link>
+      </section>
+    </div>
   );
 }
 function Explore(props: any) {
@@ -757,6 +803,7 @@ function Explore(props: any) {
     router = useRouter();
   const q = p.toString();
   const { data, error } = useData("catalog?" + q);
+  const { data: editions } = useData("editions");
   function filter(key: string, value: string) {
     const next = new URLSearchParams(q);
     value ? next.set(key, value) : next.delete(key);
@@ -772,8 +819,8 @@ function Explore(props: any) {
           </span>
           <h1>Explore seu universo.</h1>
           <p>
-            Encontre cartas e colecionáveis. Todos os produtos atuais são
-            fictícios.
+            Encontre cartas e colecionáveis. Cartas existentes, com ofertas e
+            preços de demonstração.
           </p>
         </div>
         <span className="count">{data?.length || 0} ofertas demo</span>
@@ -834,6 +881,31 @@ function Explore(props: any) {
               ))}
             </select>
           </label>
+          {[
+            ["language", "Idioma"],
+            ["finish", "Acabamento"],
+            ["rarity", "Raridade"],
+          ].map(([key, label]) => (
+            <label key={key}>
+              {label}
+              <select
+                aria-label={label}
+                value={p.get(key) || ""}
+                onChange={(e) => filter(key, e.target.value)}
+              >
+                <option value="">Todos</option>
+                {[
+                  ...new Set<string>(
+                    (editions || []).map((e: Item) => String(e[key])),
+                  ),
+                ]
+                  .sort()
+                  .map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+              </select>
+            </label>
+          ))}
           <button
             className="text-button"
             onClick={() => router.push("/explorar")}
@@ -906,7 +978,7 @@ function Product({ id, ...props }: any) {
       <div className="detail-grid">
         <div className="detail-art">
           <img src={l.photos[0]} alt={l.title} />
-          <span>Exemplar de demonstração · arte original</span>
+          <span>Foto do exemplar: fornecida pelo anunciante</span>
         </div>
         <div className="detail-info">
           <span className="eyebrow accent">
@@ -1291,7 +1363,10 @@ function Account({ user, reload, token, kind, mode: appMode }: any) {
             <br />
             <em>uma conexão.</em>
           </h1>
-          <img src="/art/kitsune.svg" alt="Carta original Kitsune" />
+          <img
+            src="/art/card-photo-pending.svg"
+            alt="Foto do exemplar ainda não adicionada"
+          />
         </div>
         <div className="panel auth-panel">
           <div className="tabs">
@@ -2087,7 +2162,7 @@ function Boosters({ add }: any) {
                       title: c.title,
                       price: c.price,
                       quantity: 1,
-                      image: "/art/eclipse.svg",
+                      image: "/art/card-photo-pending.svg",
                       seller: c.seller_name,
                       version: c.version,
                       stockToken: c.stockToken,
@@ -2321,14 +2396,8 @@ function SellerDashboard({ user, action }: any) {
             />
             <Select
               name="demoArt"
-              label="Ou arte autorizada de demonstração"
-              options={[
-                "/art/aurora.svg",
-                "/art/samurai.svg",
-                "/art/kitsune.svg",
-                "/art/eclipse.svg",
-                "/art/mecha.svg",
-              ]}
+              label="Ou usar imagem pendente na demonstração"
+              options={["/art/card-photo-pending.svg"]}
             />
             <label className="checkbox">
               <input type="checkbox" required />
@@ -2440,22 +2509,22 @@ function CampaignEditor({
 }) {
   const [inventory, setInventory] = useState([
     {
-      editionId: "forest-pt",
+      editionId: "pkmn-base1-44-en",
       group: "comum",
       quantity: 10,
       condition: "NM",
-      photo: "/art/forest.svg",
+      photo: "/art/card-photo-pending.svg",
       declaredValue: 1000,
       referenceValue: null as number | null,
       referenceSource: null as string | null,
       referenceDate: null as string | null,
     },
     {
-      editionId: "kitsune-pt",
+      editionId: "pkmn-sv3-125-en",
       group: "rara",
       quantity: 2,
       condition: "NM",
-      photo: "/art/kitsune.svg",
+      photo: "/art/card-photo-pending.svg",
       declaredValue: 5000,
       referenceValue: null as number | null,
       referenceSource: null as string | null,
@@ -3042,12 +3111,8 @@ function Admin({ user, action }: any) {
               <Field name="finish" label="Acabamento" />
               <Select
                 name="art"
-                label="Ilustração original demo"
-                options={[
-                  "/art/aurora.svg",
-                  "/art/sakura.svg",
-                  "/art/forest.svg",
-                ]}
+                label="Foto do exemplar pendente (demonstração)"
+                options={["/art/card-photo-pending.svg"]}
               />
             </div>
           </Form>
@@ -3125,7 +3190,7 @@ function AffiliateForm({
           url: val(f, "url"),
           image: file?.size
             ? await upload(file)
-            : a?.image || "/art/sakura.svg",
+            : a?.image || "/art/card-photo-pending.svg",
           referencePrice: val(f, "referencePrice")
             ? num(f, "referencePrice")
             : null,

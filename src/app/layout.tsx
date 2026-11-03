@@ -1,5 +1,7 @@
+import "@fontsource-variable/inter";
 import type { Metadata } from "next";
 import "./globals.css";
+import "./marketplace-theme.css";
 export const metadata: Metadata = {
   title: `${process.env.NEXT_PUBLIC_SITE_NAME || "Nexo TCG"} · Sua próxima grande descoberta`,
   description:

@@ -2,7 +2,7 @@
 
 Marketplace brasileiro executável de cartas e colecionáveis, com catálogo, anúncios, compras internas sandbox, afiliados e boosters de demonstração. Nome provisório, sem pressupor registro de marca ou domínio.
 
-**Esta entrega é um ambiente de demonstração funcional. Não opera dinheiro nem envios reais.** O sandbox é local, não a homologação bancária de Mercado Pago. Os dados iniciais, contas, produtos, frete e imagens estão identificados como fictícios. Nenhuma estatística demo representa atividade comercial real.
+**Esta entrega é um ambiente de demonstração funcional. Não opera dinheiro nem envios reais.** O sandbox é local, não a homologação bancária de Mercado Pago. Os dados iniciais, contas, ofertas, frete e estoques são demonstrativos; as identidades de cartas são reais. Imagens ausentes são sinalizadas até o vendedor enviar fotos permitidas. Nenhuma estatística demo representa atividade comercial real.
 
 ## Executar
 
@@ -27,7 +27,7 @@ As migrações são idempotentes e o seed não duplica registros. Migrações ta
 2. Explore o catálogo, filtre por franquia/tipo/conservação, favorite e compare ofertas da mesma versão e condição.
 3. Adicione produtos de diferentes vendedores ao carrinho. Selecione o endereço demo e Pix ou cartão simulados. Reserva: 15 minutos. Frete demo: R$ 15 por vendedor.
 4. No pedido, use **Simular pagamento aprovado**. Isto confirma o pagamento no servidor. **Simular falha** libera estoque.
-5. Compre o **Booster Cosmos** em demonstração, confirme o pagamento e revele cada carta ou pule a animação. Recarregar preserva o resultado e as cartas já reveladas. O servidor nunca sorteia de novo ao abrir.
+5. Compre o **Booster Pokémon — demonstração** em demonstração, confirme o pagamento e revele cada carta ou pule a animação. Recarregar preserva o resultado e as cartas já reveladas. O servidor nunca sorteia de novo ao abrir.
 6. Use a conta vendedor para criar/editar/pausar/encerrar anúncios, cadastrar campanhas, conferir a lista exata das cartas, mensagens e atualizar remessas. Confirme a entrega como comprador para poder avaliar.
 7. Como administrador, modere anúncios e usuários, cadastre catálogo e afiliados autorizados, consulte pedidos/auditoria/conciliação, resolva disputas e registre estornos. O detalhe do pedido mostra ao admin o ID do item para reembolso. Frete usa ID completo da remessa, visível em Admin → dados do pedido/API; a UI de remessa também o exibe.
 
@@ -86,3 +86,7 @@ Leia [decisões de arquitetura](docs/ARCHITECTURE.md), [pagamentos e pendências
 ## Hospedar a demonstração
 
 O pacote Docker e `render.yaml` preparam um serviço web e PostgreSQL separado no plano gratuito do Render. Não existe publicação automática sem uma conta conectada. Siga [as instruções de hospedagem](docs/DEPLOYMENT.md). O teste `node scripts/hosting-smoke.mjs` valida uma imagem já iniciada localmente na porta 3100; HOSTING_TEST_URL permite outro endereço de demonstração.
+
+## Visual e catálogo
+
+A vitrine usa uma identidade em azul-noite e violeta, menu por universo e produto, e navegação móvel acessível. O catálogo inicial contém cartas existentes de Pokémon e One Piece, sem cotações ou fotos de terceiros presumidas. Veja [decisões e fontes da reformulação](docs/STOREFRONT-DESIGN.md).

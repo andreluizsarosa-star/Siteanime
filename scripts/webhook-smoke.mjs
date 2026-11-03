@@ -16,7 +16,7 @@ const login = await fetch(base + "/api/auth/login", {
 if (!login.ok) throw new Error("Falha de login");
 const cookie = login.headers.get("set-cookie")?.split(";")[0];
 const listing = (await (await fetch(base + "/api/catalog")).json()).find(
-  (l) => l.id === "forest-listing",
+  (l) => l.id === "demo-bulbasaur-base",
 );
 const checkout = await fetch(base + "/api/checkout", {
   method: "POST",

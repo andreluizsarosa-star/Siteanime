@@ -1,4 +1,5 @@
 import { chromium } from "playwright-core";
+const base = process.env.BROWSER_TEST_URL || "http://localhost:3000";
 const browser = await chromium.launch({
   executablePath: "/usr/bin/chromium",
   headless: true,
@@ -10,18 +11,18 @@ try {
   });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("http://localhost:3000");
+  await page.goto(base + "");
   await page.locator(".product-card").first().waitFor();
   await page.screenshot({
     path: ".data/checks/home-desktop.png",
     fullPage: true,
   });
-  await page.goto("http://localhost:3000/conta");
+  await page.goto(base + "/conta");
   await page.getByRole("button", { name: "Comprador", exact: true }).click();
   await page.getByRole("heading", { name: "Olá, Luca Martins." }).waitFor();
-  await page.goto("http://localhost:3000/boosters");
+  await page.goto(base + "/boosters");
   await page.getByRole("button", { name: "Experimentar booster" }).click();
-  await page.goto("http://localhost:3000/carrinho");
+  await page.goto(base + "/carrinho");
   await page.locator('select[name="address"]').selectOption("demo-address");
   await page.locator('input[type="checkbox"]').check();
   await page
@@ -55,19 +56,16 @@ try {
   });
   const orderId = new URL(page.url()).pathname.split("/").pop();
   const detail = await (
-    await page.request.get("http://localhost:3000/api/orders/" + orderId)
+    await page.request.get(base + "/api/orders/" + orderId)
   ).json();
   async function loginAs(email) {
-    const res = await page.request.post(
-      "http://localhost:3000/api/auth/login",
-      {
-        data: { email, password: "NexoDemo2026!" },
-      },
-    );
+    const res = await page.request.post(base + "/api/auth/login", {
+      data: { email, password: "NexoDemo2026!" },
+    });
     if (!res.ok()) throw new Error(await res.text());
   }
   async function post(path, data) {
-    const res = await page.request.post("http://localhost:3000/api/" + path, {
+    const res = await page.request.post(base + "/api/" + path, {
       data,
     });
     if (!res.ok()) throw new Error(await res.text());
@@ -96,7 +94,7 @@ try {
     "PASS: mensagem, postagem sandbox, confirmação de entrega e avaliação vinculada à compra",
   );
   await loginAs("loja@nexo.test");
-  await page.goto("http://localhost:3000/vender");
+  await page.goto(base + "/vender");
   await page
     .getByRole("button", { name: "Criar anúncio", exact: true })
     .click();
@@ -114,16 +112,14 @@ try {
   await page.getByText("Salvo com sucesso.", { exact: true }).waitFor();
   console.log("PASS: vendedor cria anúncio pelo formulário");
   await loginAs("admin@nexo.test");
-  await page.goto("http://localhost:3000/admin");
+  await page.goto(base + "/admin");
   await page.getByRole("button", { name: "Afiliados", exact: true }).click();
   await page
     .getByRole("heading", { name: "Cadastrar oferta autorizada" })
     .waitFor();
-  const affiliateForm = page
-    .locator("section.panel")
-    .filter({
-      has: page.getByRole("heading", { name: "Cadastrar oferta autorizada" }),
-    });
+  const affiliateForm = page.locator("section.panel").filter({
+    has: page.getByRole("heading", { name: "Cadastrar oferta autorizada" }),
+  });
   await affiliateForm
     .getByLabel("Produto", { exact: true })
     .fill("Oferta de validação inativa " + Date.now());
@@ -151,7 +147,7 @@ try {
     "PASS: administração cadastra oferta externa inativa sem checkout interno",
   );
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("http://localhost:3000");
+  await page.goto(base + "");
   await page.locator(".product-card").first().waitFor();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > innerWidth,

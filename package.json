@@ -14,10 +14,12 @@
     "test:postgres-race": "node --import tsx scripts/postgres-race.ts",
     "format": "prettier --write src scripts tests *.ts *.json docs/*.md README.md",
     "setup:local": "node scripts/setup-local.mjs",
-    "test:webhook": "node --env-file-if-exists=.env.local scripts/webhook-smoke.mjs"
+    "test:webhook": "node --env-file-if-exists=.env.local scripts/webhook-smoke.mjs",
+    "test:navigation": "node scripts/navigation-smoke.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.14",
+    "@fontsource-variable/inter": "^5.3.0",
     "bcryptjs": "^3.0.2",
     "lucide-react": "^0.468.0",
     "next": "^16.0.0",

@@ -207,6 +207,9 @@ async function handle(
       const franchise = p.get("franchise") || "";
       const type = p.get("type") || "";
       const condition = p.get("condition") || "";
+      const language = p.get("language") || "",
+        finish = p.get("finish") || "",
+        rarity = p.get("rarity") || "";
       const sorting: Record<string, string> = {
         recent: "l.created_at DESC",
         price: "l.price ASC",
@@ -215,15 +218,15 @@ async function handle(
       const sort = sorting[p.get("sort") || "recent"] || sorting.recent;
       return json(
         await query(
-          `SELECT l.*,e.collection,e.code,e.rarity,e.language,e.finish,e.art,c.franchise,c.product_type,u.name seller_name FROM listings l JOIN editions e ON e.id=l.edition_id JOIN cards c ON c.id=e.card_id JOIN users u ON u.id=l.seller_id WHERE l.status='active' AND NOT u.suspended AND ($1='' OR l.title ILIKE '%'||$1||'%' OR e.collection ILIKE '%'||$1||'%') AND ($2='' OR c.franchise=$2) AND ($3='' OR c.product_type=$3) AND ($4='' OR l.condition=$4) ORDER BY ${sort} LIMIT 100`,
-          [filter, franchise, type, condition],
+          `SELECT l.*,e.collection,e.code,e.rarity,e.language,e.finish,e.art,c.franchise,c.product_type,u.name seller_name FROM listings l JOIN editions e ON e.id=l.edition_id JOIN cards c ON c.id=e.card_id JOIN users u ON u.id=l.seller_id WHERE l.status='active' AND NOT c.archived AND NOT u.suspended AND ($1='' OR l.title ILIKE '%'||$1||'%' OR e.collection ILIKE '%'||$1||'%' OR e.code ILIKE '%'||$1||'%' OR c.franchise ILIKE '%'||$1||'%') AND ($2='' OR c.franchise=$2) AND ($3='' OR c.product_type=$3) AND ($4='' OR l.condition=$4) AND ($5='' OR e.language=$5) AND ($6='' OR e.finish=$6) AND ($7='' OR e.rarity=$7) ORDER BY ${sort} LIMIT 100`,
+          [filter, franchise, type, condition, language, finish, rarity],
         ),
       );
     }
     if (path.startsWith("product/") && method === "GET") {
       const lid = path.slice(8);
       const [l] = await query(
-        "SELECT l.*,e.*,l.id id,c.franchise,c.name,c.product_type,u.name seller_name FROM listings l JOIN editions e ON e.id=l.edition_id JOIN cards c ON c.id=e.card_id JOIN users u ON u.id=l.seller_id WHERE l.id=$1 AND l.status=$2 AND NOT u.suspended",
+        "SELECT l.*,e.*,l.id id,c.franchise,c.name,c.product_type,u.name seller_name FROM listings l JOIN editions e ON e.id=l.edition_id JOIN cards c ON c.id=e.card_id JOIN users u ON u.id=l.seller_id WHERE l.id=$1 AND l.status=$2 AND NOT c.archived AND NOT u.suspended",
         [lid, "active"],
       );
       check(l, "Anúncio não encontrado", 404);
@@ -246,7 +249,7 @@ async function handle(
           [sid],
         ),
         listings: await query(
-          "SELECT l.*,e.art,c.franchise,u.name seller_name FROM listings l JOIN editions e ON e.id=l.edition_id JOIN cards c ON c.id=e.card_id JOIN users u ON u.id=l.seller_id WHERE seller_id=$1 AND status='active'",
+          "SELECT l.*,e.art,c.franchise,u.name seller_name FROM listings l JOIN editions e ON e.id=l.edition_id JOIN cards c ON c.id=e.card_id JOIN users u ON u.id=l.seller_id WHERE seller_id=$1 AND status='active' AND NOT c.archived",
           [sid],
         ),
       });
@@ -271,7 +274,7 @@ async function handle(
       }
       return json(
         await query(
-          "SELECT l.*,e.art,c.franchise,u.name seller_name FROM favorites f JOIN listings l ON l.id=f.listing_id JOIN editions e ON e.id=l.edition_id JOIN cards c ON c.id=e.card_id JOIN users u ON u.id=l.seller_id WHERE f.user_id=$1",
+          "SELECT l.*,e.art,c.franchise,u.name seller_name FROM favorites f JOIN listings l ON l.id=f.listing_id JOIN editions e ON e.id=l.edition_id JOIN cards c ON c.id=e.card_id JOIN users u ON u.id=l.seller_id WHERE f.user_id=$1 AND NOT c.archived",
           [user.id],
         ),
       );
@@ -366,7 +369,7 @@ async function handle(
     if (path === "editions" && method === "GET")
       return json(
         await query(
-          "SELECT e.*,c.name,c.franchise,c.product_type FROM editions e JOIN cards c ON c.id=e.card_id ORDER BY c.name",
+          "SELECT e.*,c.name,c.franchise,c.product_type FROM editions e JOIN cards c ON c.id=e.card_id WHERE NOT c.archived ORDER BY c.name",
         ),
       );
     if (path === "listings") {
@@ -374,7 +377,7 @@ async function handle(
       if (method === "GET")
         return json(
           await query(
-            "SELECT l.*,e.art FROM listings l JOIN editions e ON e.id=l.edition_id WHERE seller_id=$1 ORDER BY created_at DESC",
+            "SELECT l.*,e.art FROM listings l JOIN editions e ON e.id=l.edition_id JOIN cards c ON c.id=e.card_id WHERE seller_id=$1 AND NOT c.archived ORDER BY l.created_at DESC",
             [user.id],
           ),
         );

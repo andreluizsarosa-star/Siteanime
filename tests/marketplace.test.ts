@@ -43,7 +43,11 @@ beforeAll(async () => {
     "demo-admin",
   ]);
 });
-async function buy(listingId = "forest-listing", quantity = 1, key = id()) {
+async function buy(
+  listingId = "demo-bulbasaur-base",
+  quantity = 1,
+  key = id(),
+) {
   return checkout(buyer, [{ listingId, quantity }], key, "demo-address", "pix");
 }
 async function paid() {
@@ -77,8 +81,8 @@ describe("Estoque, pagamentos e pedidos", () => {
     const o = await checkout(
       buyer,
       [
-        { listingId: "aurora-listing", quantity: 1 },
-        { listingId: "mecha-listing", quantity: 1 },
+        { listingId: "demo-charizard-base", quantity: 1 },
+        { listingId: "demo-luffy-st01", quantity: 1 },
       ],
       id(),
       "demo-address",
@@ -92,22 +96,24 @@ describe("Estoque, pagamentos e pedidos", () => {
   });
   it("idempotência do checkout não reserva estoque duas vezes", async () => {
     const key = id();
-    const a = await buy("moon-listing", 1, key);
-    const b = await buy("moon-listing", 1, key);
+    const a = await buy("demo-pikachu-base", 1, key);
+    const b = await buy("demo-pikachu-base", 1, key);
     expect(a.id).toBe(b.id);
   });
   it("somente uma compra consegue reservar a última unidade", async () => {
-    await query("UPDATE listings SET stock=1 WHERE id=$1", ["eclipse-listing"]);
+    await query("UPDATE listings SET stock=1 WHERE id=$1", [
+      "demo-blastoise-base",
+    ]);
     const r = await Promise.allSettled([
-      buy("eclipse-listing"),
-      buy("eclipse-listing"),
+      buy("demo-blastoise-base"),
+      buy("demo-blastoise-base"),
     ]);
     expect(r.filter((x) => x.status === "fulfilled")).toHaveLength(1);
     expect(r.filter((x) => x.status === "rejected")).toHaveLength(1);
     expect(
       (
         await query("SELECT stock FROM listings WHERE id=$1", [
-          "eclipse-listing",
+          "demo-blastoise-base",
         ])
       )[0].stock,
     ).toBe(0);
@@ -142,20 +148,20 @@ describe("Estoque, pagamentos e pedidos", () => {
     ).toHaveLength(0);
   });
   it("expiração libera estoque uma única vez e pagamento tardio é estornado", async () => {
-    const o = await buy("sakura-listing");
+    const o = await buy("demo-nami-op01");
     await query(
       "UPDATE orders SET expires_at=now()-interval '1 minute' WHERE id=$1",
       [o.id],
     );
     await transaction(expireReservations);
     const before = (
-      await query("SELECT stock FROM listings WHERE id=$1", ["sakura-listing"])
+      await query("SELECT stock FROM listings WHERE id=$1", ["demo-nami-op01"])
     )[0].stock;
     await transaction(expireReservations);
     expect(
       (
         await query("SELECT stock FROM listings WHERE id=$1", [
-          "sakura-listing",
+          "demo-nami-op01",
         ])
       )[0].stock,
     ).toBe(before);
@@ -171,15 +177,15 @@ describe("Estoque, pagamentos e pedidos", () => {
     expect(
       (
         await query("SELECT stock FROM listings WHERE id=$1", [
-          "sakura-listing",
+          "demo-nami-op01",
         ])
       )[0].stock,
     ).toBe(before);
   });
   it("falha de pagamento devolve as unidades", async () => {
-    const o = await buy("samurai-listing");
+    const o = await buy("demo-zoro-op01");
     const [before] = await query("SELECT stock FROM listings WHERE id=$1", [
-      "samurai-listing",
+      "demo-zoro-op01",
     ]);
     await paymentEvent({
       eventId: id(),
@@ -190,7 +196,7 @@ describe("Estoque, pagamentos e pedidos", () => {
     expect(
       (
         await query("SELECT stock FROM listings WHERE id=$1", [
-          "samurai-listing",
+          "demo-zoro-op01",
         ])
       )[0].stock,
     ).toBe(before.stock + 1);
@@ -214,15 +220,15 @@ describe("Estoque, pagamentos e pedidos", () => {
     const o = await paid();
     await query("UPDATE listings SET title=$1 WHERE id=$2", [
       "Novo título",
-      "forest-listing",
+      "demo-bulbasaur-base",
     ]);
     const [i] = await query("SELECT * FROM order_items WHERE order_id=$1", [
       o.id,
     ]);
-    expect(i.snapshot.title).toBe("Sentinela da Floresta");
+    expect(i.snapshot.title).toBe("Bulbasaur");
     await query("UPDATE listings SET title=$1 WHERE id=$2", [
-      "Sentinela da Floresta",
-      "forest-listing",
+      "Bulbasaur",
+      "demo-bulbasaur-base",
     ]);
   });
   it("afiliados não entram no checkout interno", async () => {
@@ -282,7 +288,7 @@ describe("Boosters", () => {
     const create = () =>
       checkout(
         buyer,
-        [{ campaignId: "cosmos", quantity: 1, version: 1 }],
+        [{ campaignId: "pokemon-starter-demo", quantity: 1, version: 1 }],
         id(),
         "demo-address",
         "pix",
@@ -334,7 +340,7 @@ describe("Boosters", () => {
     await expect(
       checkout(
         buyer,
-        [{ campaignId: "cosmos", quantity: 1, version: 99 }],
+        [{ campaignId: "pokemon-starter-demo", quantity: 1, version: 99 }],
         id(),
         "demo-address",
         "pix",
@@ -405,7 +411,7 @@ async function request(path: string, body?: unknown, as?: User) {
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   return (body === undefined ? GET : POST)(req, {
-    params: Promise.resolve({ path: path.split("/") }),
+    params: Promise.resolve({ path: path.split("?")[0].split("/") }),
   });
 }
 describe("Aceite e estorno de frete", () => {
@@ -413,23 +419,25 @@ describe("Aceite e estorno de frete", () => {
     await expect(
       checkout(
         buyer,
-        [{ listingId: "forest-listing", quantity: 1, expectedPrice: 1 }],
+        [{ listingId: "demo-bulbasaur-base", quantity: 1, expectedPrice: 1 }],
         id(),
         "demo-address",
         "pix",
       ),
     ).rejects.toThrow("Preço atualizado");
     const key = id();
-    await buy("forest-listing", 1, key);
-    await expect(buy("moon-listing", 1, key)).rejects.toThrow("outro carrinho");
+    await buy("demo-bulbasaur-base", 1, key);
+    await expect(buy("demo-pikachu-base", 1, key)).rejects.toThrow(
+      "outro carrinho",
+    );
   });
   it("estoque alterado exige novo aceite das probabilidades", async () => {
     const stock = await query(
-      "SELECT id FROM physical_cards WHERE campaign_id='cosmos' AND state='available' ORDER BY id",
+      "SELECT id FROM physical_cards WHERE campaign_id='pokemon-starter-demo' AND state='available' ORDER BY id",
     );
     const token = sha(stock.map((s) => s.id).join(","));
     const item = {
-      campaignId: "cosmos",
+      campaignId: "pokemon-starter-demo",
       quantity: 1,
       version: 1,
       stockToken: token,
@@ -481,7 +489,7 @@ describe("Autorização HTTP e privacidade", () => {
   it("resultado não é exposto nem revelável antes do pagamento", async () => {
     const o = await checkout(
       buyer,
-      [{ campaignId: "cosmos", quantity: 1, version: 1 }],
+      [{ campaignId: "pokemon-starter-demo", quantity: 1, version: 1 }],
       id(),
       "demo-address",
       "pix",
@@ -524,7 +532,7 @@ describe("Autorização HTTP e privacidade", () => {
   it("revela uma única vez e persiste o estado no servidor", async () => {
     const o = await checkout(
       buyer,
-      [{ campaignId: "cosmos", quantity: 1, version: 1 }],
+      [{ campaignId: "pokemon-starter-demo", quantity: 1, version: 1 }],
       id(),
       "demo-address",
       "pix",
@@ -610,5 +618,56 @@ describe("Cadastro e recuperação", () => {
     expect(await currentUser(session)).toBeNull();
     await expect(login(email, "SenhaNova123!")).rejects.toThrow();
     expect(await login(email, "OutraSenha456!")).toBeTruthy();
+  });
+});
+
+import { seedRealCatalog } from "../src/lib/demo-catalog";
+describe("Catálogo real e atualização da demonstração", () => {
+  it("busca por código e filtra idioma, acabamento e raridade", async () => {
+    const res = await request(
+      "catalog?q=OP01-025&language=Ingl%C3%AAs&rarity=SR",
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveLength(1);
+    expect(data[0].title).toBe("Roronoa Zoro");
+    expect(data[0].code).toBe("OP01-025");
+    const empty = await request("catalog?language=Portugu%C3%AAs");
+    expect(await empty.json()).toHaveLength(0);
+  });
+  it("arquiva exemplos inventados e preserva snapshots dos pedidos pagos", async () => {
+    const order = await paid();
+    const [item] = await query("SELECT * FROM order_items WHERE order_id=$1", [
+      order.id,
+    ]);
+    await query(
+      "INSERT INTO cards(id,franchise,name,product_type) VALUES('aurora','Pokémon','Exemplo antigo','Carta avulsa')",
+    );
+    await query(
+      "INSERT INTO editions VALUES('legacy-edition','aurora','Antiga','NX-001','Rara','Português','Holo','/art/aurora.svg')",
+    );
+    await query(
+      "INSERT INTO listings(id,seller_id,edition_id,title,description,condition,price,stock) VALUES('legacy-listing','demo-seller','legacy-edition','Exemplo antigo','Exemplo arquivado','NM',1000,1)",
+    );
+    await query("DELETE FROM audit WHERE action='demo.catalog.real.v1'");
+    await transaction(seedRealCatalog);
+    expect(
+      (await query("SELECT archived FROM cards WHERE id='aurora'"))[0].archived,
+    ).toBe(true);
+    expect(
+      (await query("SELECT status FROM listings WHERE id='legacy-listing'"))[0]
+        .status,
+    ).toBe("closed");
+    expect(
+      (
+        await query("SELECT snapshot FROM order_items WHERE id=$1", [item.id])
+      )[0].snapshot,
+    ).toEqual(item.snapshot);
+    const data = await (await request("catalog")).json();
+    expect(data.some((r: any) => r.title === "Exemplo antigo")).toBe(false);
+    expect(data.some((r: any) => r.title === "Charizard")).toBe(true);
+    const before = await query("SELECT id FROM listings");
+    await transaction(seedRealCatalog);
+    expect((await query("SELECT id FROM listings")).length).toBe(before.length);
   });
 });

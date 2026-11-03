@@ -9,7 +9,7 @@ if (!process.env.DATABASE_URL)
 await seed();
 const suffix = crypto.randomUUID();
 await query(
-  "INSERT INTO listings(id,seller_id,edition_id,title,description,condition,price,stock) VALUES('pg-race','demo-seller','forest-pt','Teste de corrida','Dado fictício','NM',1000,1) ON CONFLICT(id) DO UPDATE SET stock=1",
+  "INSERT INTO listings(id,seller_id,edition_id,title,description,condition,price,stock) VALUES('pg-race','demo-seller','pkmn-base1-44-en','Teste de corrida','Dado fictício','NM',1000,1) ON CONFLICT(id) DO UPDATE SET stock=1",
 );
 for (const who of ["demo-buyer", "demo-admin"])
   await query(
