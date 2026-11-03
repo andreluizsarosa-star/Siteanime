@@ -14,6 +14,7 @@ FROM node:24-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production APP_MODE=demo NEXT_TELEMETRY_DISABLED=1 PORT=3000 DATA_DIR=/app/.data/postgres
 COPY --from=build --chown=node:node /app /app
+RUN mkdir -p /app/.data && chown node:node /app/.data
 USER node
 EXPOSE 3000
 CMD ["node", "scripts/start-hosted.mjs"]

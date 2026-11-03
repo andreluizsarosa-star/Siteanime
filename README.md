@@ -82,3 +82,7 @@ Defina DATABASE_URL antes de migrar. Use um banco vazio separado para produção
 A aplicação bloqueia checkout e boosters reais em APP_MODE=production; não basta adicionar uma chave. Também recusa banco com contas demo. Ainda são necessários adaptador de pagamento homologado, KYC/recebedores e split contratado, webhooks oficiais com consulta ao provedor, conciliação externa, frete real, e-mail, processamento e armazenamento de fotos, observabilidade, backups e revisão jurídica/LGPD. A venda real de boosters exige ainda aceitação expressa do provedor. Não há recompra, saldo sacável ou promessa de rentabilidade.
 
 Leia [decisões de arquitetura](docs/ARCHITECTURE.md), [pagamentos e pendências de integração](docs/PAYMENTS.md) e [validação](docs/VALIDATION.md). Não presuma que as configurações salvas do ambiente já foram publicadas ou testadas em uma nova tarefa.
+
+## Hospedar a demonstração
+
+O pacote Docker e `render.yaml` preparam um serviço web e PostgreSQL separado no plano gratuito do Render. Não existe publicação automática sem uma conta conectada. Siga [as instruções de hospedagem](docs/DEPLOYMENT.md). O teste `node scripts/hosting-smoke.mjs` valida uma imagem já iniciada localmente na porta 3100; HOSTING_TEST_URL permite outro endereço de demonstração.
