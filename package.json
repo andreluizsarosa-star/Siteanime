@@ -1,0 +1,46 @@
+{
+  "name": "nexo-tcg",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build --webpack",
+    "start": "next start --hostname 0.0.0.0",
+    "db:migrate": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/migrate.ts",
+    "db:seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/seed.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "test:browser": "node scripts/browser-smoke.mjs",
+    "test:postgres-race": "node --import tsx scripts/postgres-race.ts",
+    "format": "prettier --write src scripts tests *.ts *.json docs/*.md README.md",
+    "setup:local": "node scripts/setup-local.mjs",
+    "test:webhook": "node --env-file-if-exists=.env.local scripts/webhook-smoke.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.3.14",
+    "bcryptjs": "^3.0.2",
+    "lucide-react": "^0.468.0",
+    "next": "^16.0.0",
+    "nodemailer": "^7.0.0",
+    "pg": "^8.16.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/nodemailer": "^7.0.0",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "playwright-core": "^1.64.1",
+    "prettier": "^3.9.10",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.4"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.6.0"
+  }
+}

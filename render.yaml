@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: nexo-tcg-demo
+    runtime: docker
+    plan: free
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: APP_MODE
+        value: demo
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: SANDBOX_WEBHOOK_SECRET
+        generateValue: true
